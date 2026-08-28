@@ -1,69 +1,143 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFC Predictor</title>
+    <title>UFC Matchup Predictor - Tomorrow's Fight Night</title>
     <style>
-        body { font-family: system-ui; background: #111; color: #fff; padding: 15px; }
-        select, input, button { width: 100%; padding: 12px; margin-top: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; }
-        button { background: #d20a0a; font-weight: bold; border: none; margin-top: 15px; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        .corner-box {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+        select {
+            width: 100%;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
+
     <h2>UFC Matchup Predictor</h2>
-    <label>Division Filter:</label>
-    <select id="weightFilter" onchange="searchAll()">
+    <p><em>Featured Event: UFC Fight Night: Nurmagomedov vs. Song</em></p>
+    
+    <label for="division-select"><strong>Division:</strong></label>
+    <select id="division-select" style="margin-bottom: 20px;">
         <option value="All">All Divisions</option>
-        <option value="Flyweight">Flyweight</option>
         <option value="Bantamweight">Bantamweight</option>
+        <option value="Flyweight">Flyweight</option>
+        <option value="Strawweight">Strawweight</option>
         <option value="Featherweight">Featherweight</option>
-        <option value="Lightweight">Lightweight</option>
+        <option value="Light Heavyweight">Light Heavyweight</option>
+        <option value="Welterweight">Welterweight</option>
     </select>
 
-    <div class="card">
+    <div class="corner-box">
         <h3>Red Corner</h3>
-        <input type="text" id="f1Query" placeholder="Search Fighter..." oninput="search(1)">
-        <select id="f1Select" size="4"></select>
+        <input type="text" id="red-search" placeholder="Search Red Corner fighter...">
+        <select id="red-fighter-select" size="6"></select>
     </div>
 
-    <div class="card">
+    <div class="corner-box">
         <h3>Blue Corner</h3>
-        <input type="text" id="f2Query" placeholder="Search Fighter..." oninput="search(2)">
-        <select id="f2Select" size="4"></select>
+        <input type="text" id="blue-search" placeholder="Search Blue Corner fighter...">
+        <select id="blue-fighter-select" size="6"></select>
     </div>
 
-    <button onclick="runModel()">PREDICT WINNER</button>
-    <h3 id="result" style="color:#00ff88; text-align:center; margin-top:20px;"></h3>
+    <h3 id="prediction-result"></h3>
 
     <script>
-        // REPLACE THIS URL AFTER STEP 3 WITH YOUR RENDER LIVE BACKEND URL
-        const API_URL = "https://ufc-predicting.onrender.com";
+        // Tomorrow's Fight Card Fighters
+        const fighters = [
+            // Bantamweight
+            { name: "Umar Nurmagomedov", division: "Bantamweight" },
+            { name: "Song Yadong", division: "Bantamweight" },
+            { name: "Aoriqileng", division: "Bantamweight" },
+            { name: "Kai Asakura", division: "Bantamweight" },
+            { name: "Xiao Long", division: "Bantamweight" },
+            { name: "Francesco Nuzzi", division: "Bantamweight" },
+            { name: "Lawrence Lui", division: "Bantamweight" },
+            { name: "Hector Santiago", division: "Bantamweight" },
+            
+            // Flyweight
+            { name: "Alex Perez", division: "Flyweight" },
+            { name: "Su Mudaerji", division: "Flyweight" },
+            { name: "Bilal Hasan", division: "Flyweight" },
+            { name: "Nilson Rojas", division: "Flyweight" },
+            { name: "Rei Tsuruya", division: "Flyweight" },
+            { name: "Kevin Borjas", division: "Flyweight" },
+            { name: "Namsrai Batbayar", division: "Flyweight" },
+            { name: "André Lima", division: "Flyweight" },
 
-        async function search(corner) {
-            const q = document.getElementById(`f${corner}Query`).value;
-            const w = document.getElementById("weightFilter").value;
-            const res = await fetch(`${API_URL}/fighters?query=${q}&weight_class=${w}`);
-            const data = await res.json();
-            const sel = document.getElementById(`f${corner}Select`);
-            sel.innerHTML = "";
-            data.forEach(f => {
-                const opt = document.createElement("option");
-                opt.value = f.id;
-                opt.textContent = `${f.name} (${f.stance || 'Orthodox'})`;
-                sel.appendChild(opt);
+            // Strawweight
+            { name: "Yan Xiaonan", division: "Strawweight" },
+            { name: "Denise Gomes", division: "Strawweight" },
+            { name: "Xiong Jingnan", division: "Strawweight" },
+            { name: "Julia Polastri", division: "Strawweight" },
+
+            // Featherweight
+            { name: "Jack Jenkins", division: "Featherweight" },
+            { name: "Sean Woodson", division: "Featherweight" },
+
+            // Light Heavyweight
+            { name: "Liu Ce", division: "Light Heavyweight" },
+            { name: "Levi Rodrigues Jr.", division: "Light Heavyweight" },
+
+            // Welterweight
+            { name: "Ding Meng", division: "Welterweight" },
+            { name: "Cam Nelson", division: "Welterweight" }
+        ];
+
+        const redSearch = document.getElementById('red-search');
+        const redSelect = document.getElementById('red-fighter-select');
+        const blueSearch = document.getElementById('blue-search');
+        const blueSelect = document.getElementById('blue-fighter-select');
+        const divisionSelect = document.getElementById('division-select');
+
+        function populateList(selectElement, filterText = '', selectedDivision = 'All') {
+            selectElement.innerHTML = '';
+            
+            const filtered = fighters.filter(f => {
+                const matchesName = f.name.toLowerCase().includes(filterText.toLowerCase());
+                const matchesDiv = selectedDivision === 'All' || f.division === selectedDivision;
+                return matchesName && matchesDiv;
+            });
+
+            filtered.forEach(fighter => {
+                const option = document.createElement('option');
+                option.value = fighter.name;
+                option.textContent = `${fighter.name} (${fighter.division})`;
+                selectElement.appendChild(option);
             });
         }
-        function searchAll() { search(1); search(2); }
-        async function runModel() {
-            const f1 = document.getElementById("f1Select").value;
-            const f2 = document.getElementById("f2Select").value;
-            if(!f1 || !f2) return alert("Select 2 fighters first!");
-            const res = await fetch(`${API_URL}/predict?fighter1_id=${f1}&fighter2_id=${f2}`);
-            const data = await res.json();
-            document.getElementById("result").innerText = `${data.fighter1} (${data.fighter1_prob}) vs ${data.fighter2} (${data.fighter2_prob})`;
-        }
-        searchAll();
+
+        redSearch.addEventListener('input', (e) => {
+            populateList(redSelect, e.target.value, divisionSelect.value);
+        });
+
+        blueSearch.addEventListener('input', (e) => {
+            populateList(blueSelect, e.target.value, divisionSelect.value);
+        });
+
+        divisionSelect.addEventListener('change', (e) => {
+            populateList(redSelect, redSearch.value, e.target.value);
+            populateList(blueSelect, blueSearch.value, e.target.value);
+        });
+
+        // Initial Load
+        populateList(redSelect);
+        populateList(blueSelect);
     </script>
+
 </body>
 </html>

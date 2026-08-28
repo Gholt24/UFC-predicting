@@ -140,6 +140,36 @@
             populateList(redSelect, redSearch.value, e.target.value);
             populateList(blueSelect, blueSearch.value, e.target.value);
         });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UFC Matchup Predictor</title>
+</head>
+<body>
+
+    <!-- 1. HTML Content (Search bars, dropdowns, buttons) goes here -->
+    <div class="corner-box">...</div>
+    <button id="predict-btn">Predict Matchup</button>
+    <h3 id="prediction-result"></h3>
+
+    <!-- 2. JAVASCRIPT GOES HERE -->
+    <script>
+        // Fighter Array
+        const fighters = [...];
+
+        // Search Logic
+        function populateList() { ... }
+
+        // Prediction Logic
+        const predictBtn = document.getElementById('predict-btn');
+        predictBtn.addEventListener('click', () => {
+            // Calculate winner logic here
+        });
+    </script>
+
+</body>
+</html>
 
         // Initial Load
         populateList(redSelect);

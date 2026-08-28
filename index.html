@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Predictor</title>
+    <style>
+        body { font-family: system-ui; background: #111; color: #fff; padding: 15px; }
+        select, input, button { width: 100%; padding: 12px; margin-top: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; }
+        button { background: #d20a0a; font-weight: bold; border: none; margin-top: 15px; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>UFC Matchup Predictor</h2>
+    <label>Division Filter:</label>
+    <select id="weightFilter" onchange="searchAll()">
+        <option value="All">All Divisions</option>
+        <option value="Flyweight">Flyweight</option>
+        <option value="Bantamweight">Bantamweight</option>
+        <option value="Featherweight">Featherweight</option>
+        <option value="Lightweight">Lightweight</option>
+    </select>
+
+    <div class="card">
+        <h3>Red Corner</h3>
+        <input type="text" id="f1Query" placeholder="Search Fighter..." oninput="search(1)">
+        <select id="f1Select" size="4"></select>
+    </div>
+
+    <div class="card">
+        <h3>Blue Corner</h3>
+        <input type="text" id="f2Query" placeholder="Search Fighter..." oninput="search(2)">
+        <select id="f2Select" size="4"></select>
+    </div>
+
+    <button onclick="runModel()">PREDICT WINNER</button>
+    <h3 id="result" style="color:#00ff88; text-align:center; margin-top:20px;"></h3>
+
+    <script>
+        // REPLACE THIS URL AFTER STEP 3 WITH YOUR RENDER LIVE BACKEND URL
+        const API_URL = "YOUR_RENDER_BACKEND_URL_HERE/api";
+
+        async function search(corner) {
+            const q = document.getElementById(`f${corner}Query`).value;
+            const w = document.getElementById("weightFilter").value;
+            const res = await fetch(`${API_URL}/fighters?query=${q}&weight_class=${w}`);
+            const data = await res.json();
+            const sel = document.getElementById(`f${corner}Select`);
+            sel.innerHTML = "";
+            data.forEach(f => {
+                const opt = document.createElement("option");
+                opt.value = f.id;
+                opt.textContent = `${f.name} (${f.stance || 'Orthodox'})`;
+                sel.appendChild(opt);
+            });
+        }
+        function searchAll() { search(1); search(2); }
+        async function runModel() {
+            const f1 = document.getElementById("f1Select").value;
+            const f2 = document.getElementById("f2Select").value;
+            if(!f1 || !f2) return alert("Select 2 fighters first!");
+            const res = await fetch(`${API_URL}/predict?fighter1_id=${f1}&fighter2_id=${f2}`);
+            const data = await res.json();
+            document.getElementById("result").innerText = `${data.fighter1} (${data.fighter1_prob}) vs ${data.fighter2} (${data.fighter2_prob})`;
+        }
+        searchAll();
+    </script>
+</body>
+</html>
